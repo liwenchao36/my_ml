@@ -8,23 +8,41 @@ import numpy as np
 
 
 class IntegerCategoricalPSO:
-    def __init__(self, pop: int, dim: int, num_states: int, max_iter=300):
-        self.pop = pop
+    def __init__(self, num_pop: int, dim: int, num_states: int, max_iter=300):
+        self.num_pop = num_pop
         self.dim = dim
         self.num_states = num_states
         self.max_iter = max_iter
+        self.fscore = np.zeros(num_pop)
 
         self.position = None
         self.velocity = None
+
+        self.pBestSample = None
+        self.gBestSample = None
         pass
+
+    @staticmethod
+    def fitness(self, sample):
+        return 0
+
+    def setting_best_vector(self, sample, position):
+        epson = np.random.rand()
+        for i in range(position.shape[1]):
+            for j in range(position.shape[0]):
+                if j == sample[i]:
+                    position[i, j] = position[i, j] + (1 - epson) * np.sum(position[i, np.where(j != sample[i])])
+                else:
+                    position[i, j] = epson * position[i, j]
+        return position
 
     def initialization(self):
         """ Initialization"""
-        position = np.random.rand(self.pop, self.dim, self.num_states)
+        position = np.random.rand(self.num_pop, self.dim, self.num_states)
         position /= np.sum(position, axis=1, keepdims=True)
         self.position = position
 
-        velocity = np.zeros((self.pop, self.dim, self.num_states))
+        velocity = np.zeros((self.num_pop, self.dim, self.num_states))
         self.velocity = velocity
 
     def predict(self):
@@ -41,8 +59,22 @@ class IntegerCategoricalPSO:
 
             # deal boundary
             self.position[i, :, :] = np.clip(self.position[i, :, :], 0, 1)
+            self.position[i, :, :] /= np.sum(self.position[i, :, :], axis=1, keepdims=True)
 
-            pass
+            # sampling
+            sample = np.argmax(self.position[i, :, :])
+
+            # evaluate
+            self.fscore[i] = self.fitness(sample)
+
+            if f_pBest > self.fscore[i]:
+                f_pBest = self.fscore[i]
+                pBest = self.setting_best_vector(sample, self.position[i, :, :])
+                self.pBestSample = np.argmax(pBest)
+                if f_gBest > self.fscore[i]:
+                    f_gBest = self.fscore[i]
+                    gBest = self.setting_best_vector(sample, self.position[i, :, :])
+                    self.gBestSample = np.argmax(gBest)
         pass
 
 
