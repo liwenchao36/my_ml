@@ -1,3 +1,9 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Time  : 2023/7/14 21:07
+# @Author: Lee Wen-tsao
+# @E-mail: liwenchao36@163.com
+# @Software:
 import numpy as np
 
 
