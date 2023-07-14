@@ -8,10 +8,10 @@ import numpy as np
 
 
 class IntegerCategoricalPSO:
-    def __init__(self, pop: int, dim: int, num_values: int, max_iter=300):
+    def __init__(self, pop: int, dim: int, num_states: int, max_iter=300):
         self.pop = pop
         self.dim = dim
-        self.num_values = num_values
+        self.num_states = num_states
         self.max_iter = max_iter
 
         self.position = None
@@ -20,11 +20,11 @@ class IntegerCategoricalPSO:
 
     def initialization(self):
         """ Initialization"""
-        position = np.random.rand(self.pop, self.dim, self.num_values)
+        position = np.random.rand(self.pop, self.dim, self.num_states)
         position /= np.sum(position, axis=1, keepdims=True)
         self.position = position
 
-        velocity = np.zeros((self.pop, self.dim, self.num_values))
+        velocity = np.zeros((self.pop, self.dim, self.num_states))
         self.velocity = velocity
 
     def predict(self):
