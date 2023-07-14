@@ -20,13 +20,20 @@ class IntegerCategoricalPSO:
 
         self.pBestSample = None
         self.gBestSample = None
+
+        self.f_pBest = None
+        self.f_gBest = np.inf
+
+        self.gBest = None
+        self.pBest = None
         pass
 
     @staticmethod
-    def fitness(self, sample):
+    def fitness(sample):
         return 0
 
-    def setting_best_vector(self, sample, position):
+    @staticmethod
+    def setting_best_vector(sample, position):
         epson = np.random.rand()
         for i in range(position.shape[1]):
             for j in range(position.shape[0]):
@@ -38,12 +45,18 @@ class IntegerCategoricalPSO:
 
     def initialization(self):
         """ Initialization"""
-        position = np.random.rand(self.num_pop, self.dim, self.num_states)
-        position /= np.sum(position, axis=1, keepdims=True)
-        self.position = position
-
         velocity = np.zeros((self.num_pop, self.dim, self.num_states))
         self.velocity = velocity
+
+        position = np.random.rand(self.num_pop, self.dim, self.num_states)
+        position /= np.sum(position, axis=1, keepdims=True)
+
+        for i in range(self.num_pop):
+            sample = np.argmax(position[i, :, :])
+            self.fscore[i] = self.fitness(sample)
+
+            self.f_pBest = self.fscore[i]
+            self.pBest = position
 
     def predict(self):
         weight = 1
@@ -52,7 +65,7 @@ class IntegerCategoricalPSO:
 
             # update velocity
             self.velocity[i, :, :] = weight * self.velocity[i, :, :] + np.random.rand() * \
-                                     (pBest - self.position[i, :, :]) + (gBest - self.position[i, :, :])
+                                     (self.pBest - self.position[i, :, :]) + (self.gBest - self.position[i, :, :])
 
             # update position
             self.position[i, :, :] = self.velocity[i, :, :] + self.position[i, :, :]
@@ -67,14 +80,13 @@ class IntegerCategoricalPSO:
             # evaluate
             self.fscore[i] = self.fitness(sample)
 
-            if f_pBest > self.fscore[i]:
-                f_pBest = self.fscore[i]
-                pBest = self.setting_best_vector(sample, self.position[i, :, :])
-                self.pBestSample = np.argmax(pBest)
-                if f_gBest > self.fscore[i]:
-                    f_gBest = self.fscore[i]
-                    gBest = self.setting_best_vector(sample, self.position[i, :, :])
-                    self.gBestSample = np.argmax(gBest)
+            if self.f_pBest > self.fscore[i]:
+                self.f_pBest = self.fscore[i]
+                self.pBest = self.setting_best_vector(sample, self.position[i, :, :])
+                if self.f_gBest > self.fscore[i]:
+                    self.f_gBest = self.fscore[i]
+                    self.gBest = self.setting_best_vector(sample, self.position[i, :, :])
+                    self.gBestSample = np.argmax(self.gBest)
         pass
 
 
