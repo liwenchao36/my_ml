@@ -28,7 +28,20 @@ class IntegerCategoricalPSO:
         self.velocity = velocity
 
     def predict(self):
+        weight = 1
         for i in range(self.max_iter):
+            weight = 0.98 * weight
+
+            # update velocity
+            self.velocity[i, :, :] = weight * self.velocity[i, :, :] + np.random.rand() * \
+                                     (pBest - self.position[i, :, :]) + (gBest - self.position[i, :, :])
+
+            # update position
+            self.position[i, :, :] = self.velocity[i, :, :] + self.position[i, :, :]
+
+            # deal boundary
+            self.position[i, :, :] = np.clip(self.position[i, :, :], 0, 1)
+
             pass
         pass
 
