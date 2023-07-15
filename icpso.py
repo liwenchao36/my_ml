@@ -78,7 +78,7 @@ class IntegerCategoricalPSO:
                 # Update velocity and position
                 self.velocities[i] = 0.729 * self.velocities[i] + 1.49618 * (self.p_best - self.positions[i]) \
                                      + 1.49618 * (self.g_best - self.positions[i])
-                self.positions[i] += self.velocities[i]
+                self.positions[i] += self.velocities[i] + self.positions[i]
 
                 # Deal with boundaries
                 self.positions[i] = np.clip(self.positions[i], 0, 1)
