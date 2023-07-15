@@ -3,38 +3,115 @@
 # @Time  : 2023/7/14 21:07
 # @Author: Lee Wen-tsao
 # @E-mail: liwenchao36@163.com
-# @Software:
+# @Software: python
+from src.utils.fitness import fitness
 import numpy as np
 
 
 class IntegerCategoricalPSO:
-    def __init__(self, num_pop: int, dim: int, num_states: int, max_iter=300):
-        self.num_pop = num_pop
+    """ Integer and categorical particle swarm optimization.
+
+    This new PSO algorithm,which we call Integer and Categorical PSO,incorporates ideas from Estimation of
+    Distribution Algorithms (EDAs)in that particles represent probability distributions rather than solution
+    values, and the PSO update modifies the probability distributions.
+
+    Attributes
+    ----------
+    n_particles: int
+        The number of population.
+    dim: int
+        dimension.
+    num_states: int
+        The number of state.
+    max_iter: int
+        The number of iteration.
+    verbose： bool
+        Detailed display of iteration results
+
+    """
+
+    def __init__(self, n_particles, dim, num_states, max_iter=300, verbose=True):
+        self.n_particles = n_particles
         self.dim = dim
         self.num_states = num_states
         self.max_iter = max_iter
-        self.fscore = np.zeros(num_pop)
 
-        self.position = None
-        self.velocity = None
+        self.positions = np.random.rand(self.n_particles, self.dim, self.num_states)
+        self.velocities = np.zeros((n_particles, dim, num_states))
+        self.f_scores = np.zeros(n_particles)
 
-        self.pBestSample = None
-        self.gBestSample = None
+        self.p_best = np.empty((self.n_particles, self.dim, self.num_states))
+        self.g_best = np.empty((self.dim, self.num_states))
 
-        self.f_pBest = None
-        self.f_gBest = np.inf
+        self.f_p_best = np.empty(self.n_particles)
+        self.f_g_best = np.inf
 
-        self.gBest = None
-        self.pBest = None
+        self.g_best_sample = None
         pass
 
-    @staticmethod
-    def fitness(sample):
-        return 0
+    def initialize_population(self):
+        """ Initialize Population.
+
+        In the initialization population method, random positions are generated for each particle in the population.
+        These positions are then normalized to represent probability distributions, ensuring that the sum of
+        probabilities for each particle adds up to 1.
+
+        """
+        self.positions /= np.sum(self.positions, axis=1, keepdims=True)
+        self.p_best = self.positions
+
+        for i in range(self.n_particles):
+            self.f_p_best[i] = self.f_scores[i]
+            sample = np.argmax(self.positions[i, :, :])
+            self.f_scores[i] = fitness(sample)
+
+            if self.f_g_best > self.f_scores[i]:
+                self.f_g_best = self.f_scores[i]
+                self.g_best = self.positions[i, :, :]
+                self.g_best_sample = sample
+
+    def optimize(self):
+        self.initialize_population()
+
+        for _ in range(self.max_iter):
+            for i in range(self.n_particles):
+                # Update velocity and position
+                self.velocities[i] = 0.729 * self.velocities[i] + 1.49618 * (self.p_best - self.positions[i]) \
+                                     + 1.49618 * (self.g_best - self.positions[i])
+                self.positions[i] += self.velocities[i]
+
+                # Deal with boundaries
+                self.positions[i] = np.clip(self.positions[i], 0, 1)
+                self.positions[i] /= np.sum(self.positions[i], axis=1, keepdims=True)
+
+                # Sampling and evaluation
+                sample = np.argmax(self.positions[i])
+                self.f_scores[i] = fitness(sample)
+
+                # Update personal best and global best
+                if self.f_p_best > self.f_scores[i]:
+                    self.f_p_best = self.f_scores[i]
+                    self.p_best = self.setting_best_vector(sample, self.positions[i])
+
+                    if self.f_g_best > self.f_scores[i]:
+                        self.f_g_best = self.f_scores[i]
+                        self.g_best = self.setting_best_vector(sample, self.positions[i])
+                        self.g_best_sample = np.argmax(self.g_best)
+                pass
 
     @staticmethod
     def setting_best_vector(sample, position):
-        epson = np.random.rand()
+        """ Setting the Best vector.
+
+        Parameters
+        ----------
+        sample: ndarray
+            Its distributions are sampled to create a candidate solution.
+        position: ndarray
+            The position for a particle in ICPSO is a set of probability distributions.
+
+        """
+        epson = 0.95
         for i in range(position.shape[1]):
             for j in range(position.shape[0]):
                 if j == sample[i]:
@@ -43,56 +120,9 @@ class IntegerCategoricalPSO:
                     position[i, j] = epson * position[i, j]
         return position
 
-    def initialization(self):
-        """ Initialization"""
-        velocity = np.zeros((self.num_pop, self.dim, self.num_states))
-        self.velocity = velocity
-
-        position = np.random.rand(self.num_pop, self.dim, self.num_states)
-        position /= np.sum(position, axis=1, keepdims=True)
-
-        for i in range(self.num_pop):
-            sample = np.argmax(position[i, :, :])
-            self.fscore[i] = self.fitness(sample)
-
-            self.f_pBest = self.fscore[i]
-            self.pBest = position
-
-    def predict(self):
-        weight = 1
-        for i in range(self.max_iter):
-            weight = 0.98 * weight
-
-            # update velocity
-            self.velocity[i, :, :] = weight * self.velocity[i, :, :] + np.random.rand() * \
-                                     (self.pBest - self.position[i, :, :]) + (self.gBest - self.position[i, :, :])
-
-            # update position
-            self.position[i, :, :] = self.velocity[i, :, :] + self.position[i, :, :]
-
-            # deal boundary
-            self.position[i, :, :] = np.clip(self.position[i, :, :], 0, 1)
-            self.position[i, :, :] /= np.sum(self.position[i, :, :], axis=1, keepdims=True)
-
-            # sampling
-            sample = np.argmax(self.position[i, :, :])
-
-            # evaluate
-            self.fscore[i] = self.fitness(sample)
-
-            if self.f_pBest > self.fscore[i]:
-                self.f_pBest = self.fscore[i]
-                self.pBest = self.setting_best_vector(sample, self.position[i, :, :])
-                if self.f_gBest > self.fscore[i]:
-                    self.f_gBest = self.fscore[i]
-                    self.gBest = self.setting_best_vector(sample, self.position[i, :, :])
-                    self.gBestSample = np.argmax(self.gBest)
-        pass
-
 
 def test():
-    ICPSO = IntegerCategoricalPSO(4, 7, 3)
-    ICPSO.initialization()
+    pso = IntegerCategoricalPSO(4, 7, 3)
 
 
 if __name__ == "__main__":
