@@ -47,6 +47,7 @@ class IntegerCategoricalPSO:
         self.f_g_best = np.inf
 
         self.g_best_sample = None
+        self.verbose = verbose
         pass
 
     def initialize_population(self):
@@ -73,10 +74,10 @@ class IntegerCategoricalPSO:
     def optimize(self):
         self.initialize_population()
 
-        for _ in range(self.max_iter):
+        for j in range(self.max_iter):
             for i in range(self.n_particles):
                 # Update velocity and position
-                self.velocities[i] = 0.729 * self.velocities[i] + 1.49618 * (self.p_best - self.positions[i]) \
+                self.velocities[i] = 0.729 * self.velocities[i] + 1.49618 * (self.p_best[i] - self.positions[i]) \
                                      + 1.49618 * (self.g_best - self.positions[i])
                 self.positions[i] += self.velocities[i] + self.positions[i]
 
@@ -91,12 +92,17 @@ class IntegerCategoricalPSO:
                 # Update personal best and global best
                 if self.f_p_best > self.f_scores[i]:
                     self.f_p_best = self.f_scores[i]
-                    self.p_best = self.setting_best_vector(sample, self.positions[i])
+                    self.p_best[i] = self.positions[i]
+                    # self.p_best = self.setting_best_vector(sample, self.positions[i])
 
                     if self.f_g_best > self.f_scores[i]:
                         self.f_g_best = self.f_scores[i]
                         self.g_best = self.setting_best_vector(sample, self.positions[i])
                         self.g_best_sample = np.argmax(self.g_best)
+                pass
+
+            if self.verbose:
+                print(f"iteration{j} : f_g_best{self.f_g_best}")
                 pass
 
     @staticmethod
